@@ -3,7 +3,7 @@
 --  ESP (Player/Pulau/Chest/Resource/Boat/Creature) + Auto Lock Harpoon
 --  + Teleport + Quick E/F + Auto Farm + Auto Fuel + Movement + Home UI
 --  Author: MCP Real session
---  Toggle menu: RightCtrl
+--  Toggle menu: RightShift (atau klik ikon ⚓)
 -- ===========================================================================
 --  Struktur kode dikategorisasi:
 --    [0]  State adapter (live-reload aware)
@@ -1013,7 +1013,7 @@ local Window = WindUI:CreateWindow({
 	Folder = "100DaysSea",
 	Size = UDim2.fromOffset(560, 460),
 	MinSize = Vector2.new(480, 380),
-	ToggleKey = Enum.KeyCode.RightControl,
+	ToggleKey = Enum.KeyCode.RightShift,
 })
 
 -- Capture milik run INI secara spesifik (by identity) — hindari race dgn run lama.
@@ -1145,7 +1145,7 @@ TabHome:Button({
 TabHome:Section({ Title = "ℹ️ Tentang", Icon = "info" })
 TabHome:Paragraph({
 	Title = "100 Days Sea Hub",
-	Desc = "Tekan RightCtrl untuk buka/tutup menu.\nFitur: ESP, Auto Lock, Teleport, Quick E/F, Auto Farm, Auto Fuel, Movement.",
+	Desc = "Tekan RightShift / ikon ⚓ untuk buka/tutup menu.\nFitur: ESP, Auto Lock, Teleport, Quick E/F, Auto Farm, Auto Fuel, Movement.",
 })
 
 -- Muat avatar (yield, jalan di task.spawn)
@@ -1607,16 +1607,84 @@ TabSet:Button({
 TabSet:Section({ Title = "ℹ️ Info", Icon = "info" })
 TabSet:Paragraph({
 	Title = "Menu Keybind",
-	Desc = "RightCtrl = buka/tutup menu\nKode terorganisir per kategori di dalam loadstring.",
+	Desc = "RightShift = buka/tutup menu (atau klik ikon ⚓ di pojok kanan atas)\nKode terorganisir per kategori di dalam loadstring.",
 })
 
 -- ============================================================
 -- [13] Init
 -- ============================================================
 applyMovement()
+
+-- [13b] Tombol cadangan buka/tutup menu (klik mouse).
+--       Pakai ScreenGui TERPISAH dari WindUI → tetap tampil walau menu disembunyikan.
+--       Klik = sintesis keypress RightShift (sama persis dengan ToggleKey WindUI).
+do
+	local qName = "100DaysSea_QuickOpen"
+	local holder = (gethui and gethui()) or game:GetService("CoreGui")
+	pcall(function()
+		local old = holder:FindFirstChild(qName)
+		if old then old:Destroy() end
+	end)
+
+	local gui = Instance.new("ScreenGui")
+	gui.Name = qName
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = true
+	gui.DisplayOrder = 999
+
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.fromOffset(42, 42)
+	btn.Position = UDim2.new(1, -56, 0, 14)
+	btn.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
+	btn.BackgroundTransparency = 0.2
+	btn.Text = "⚓"
+	btn.TextSize = 20
+	btn.Font = Enum.Font.GothamBold
+	btn.TextColor3 = Color3.fromRGB(120, 200, 255)
+	btn.BorderSizePixel = 0
+	btn.AutoButtonColor = true
+	btn.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = btn
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(120, 200, 255)
+	stroke.Transparency = 0.55
+	stroke.Thickness = 1
+	stroke.Parent = btn
+
+	local function fireToggle()
+		pcall(function()
+			VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.RightShift, false, game)
+			VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.RightShift, false, game)
+		end)
+	end
+	btn.MouseButton1Click:Connect(fireToggle)
+
+	btn.MouseEnter:Connect(function()
+		btn.BackgroundTransparency = 0
+		stroke.Transparency = 0.2
+	end)
+	btn.MouseLeave:Connect(function()
+		btn.BackgroundTransparency = 0.2
+		stroke.Transparency = 0.55
+	end)
+
+	gui.Parent = holder
+
+	onCleanup(function()
+		if getgenv()["_100days_gen"] ~= MYGEN then return end
+		pcall(function()
+			if gui and gui.Parent then gui:Destroy() end
+		end)
+	end)
+end
+
 WindUI:Notify({
 	Title = "100 Days Sea",
-	Content = "Hub aktif. RightCtrl untuk buka menu.",
+	Content = "Hub aktif. RightShift / ikon ⚓ untuk buka menu.",
 	Duration = 5,
 	Icon = "anchor",
 })
